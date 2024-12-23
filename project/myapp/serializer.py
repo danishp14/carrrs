@@ -98,7 +98,7 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
         role = validated_data.pop("role")
         email = validated_data.get("email")
         name = validated_data.get("name")
-        salary=validated_data.get("salary")
+        salary = validated_data.get("salary")
 
         # Create the user
         user = Users.objects.create(
@@ -149,14 +149,13 @@ class EmpAndAdminManage(serializers.ModelSerializer):
         if role not in ["admin", "employee"]:
             raise serializers.ValidationError({"role": "Invalid role. Only 'admin' and 'employee' are allowed."})
         
-        
         return data
     
 
-class UserSee(serializers.ModelSerializer):
+class EmpSee(serializers.ModelSerializer):
     class Meta:
         model = Users
-        fields = ["id","name", "salary", "role", "last_working_day"]
+        fields = ["id","name", "salary", "role", "last_working_day","services_inhand_count","services_finished"]
 
 
 # Customer
@@ -292,6 +291,13 @@ class CustomerManage(serializers.ModelSerializer):
             
         return data
 
+
+class CustomerSee(serializers.ModelSerializer):
+    class Meta:
+        model = Users
+        fields = ["id","email","name", "role","discount_remaining","free_services_used"]
+
+
 # Serializer for records of serives
 class CarWashServiceSerializer(serializers.ModelSerializer):
     employee = serializers.PrimaryKeyRelatedField(queryset=Users.objects.all())
@@ -310,7 +316,7 @@ class CarWashServiceSerializer(serializers.ModelSerializer):
 
     def validate_status(self, value):
         instance = self.instance
-        if instance and instance.status == 'completed' and value != 'completed':
+        if instance and instance.status == "completed" and value != "completed":
             raise serializers.ValidationError("You cannot change the status of a completed service.")
         return value
 
@@ -328,7 +334,7 @@ class CarWashUpdate(serializers.ModelSerializer):
 
     class Meta:
         model = CarWashService
-        fields = ['service_type', 'status',"vehicle_number"]  # Only these fields can be updated in the PUT request
+        fields = ["service_type", "status","vehicle_number"]  # Only these fields can be updated in the PUT request
 
     def validate_vehicle_number(self, value):
         # Custom validation for vehicle number
@@ -338,14 +344,14 @@ class CarWashUpdate(serializers.ModelSerializer):
 
     def validate_status(self, value):
         instance = self.instance
-        if instance and instance.status == 'completed' and value != 'completed':
+        if instance and instance.status == "completed" and value != "completed":
             raise serializers.ValidationError("You cannot change the status of a completed service.")
         return value
 
 
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
-        model=Reviewmodel
+        model = Reviewmodel
         fields = ["ratings","review"]
 
     def validate_ratings(self, value):
@@ -387,7 +393,6 @@ class PartsListSerializer(serializers.ModelSerializer):
         return value     
 
 
-
 class PurchaseSerializer(serializers.ModelSerializer):
     parts = serializers.PrimaryKeyRelatedField(queryset=PartsListModel.objects.all())
     employee = serializers.PrimaryKeyRelatedField(queryset=Users.objects.all())
@@ -410,7 +415,7 @@ class PurchaseSerializer(serializers.ModelSerializer):
         """
         Custom validation for the entire data to ensure stock availability.
         """
-        part = data.get('parts')
+        part = data.get("parts")
         # Ensure the part exists in the database
         if part is None:
             raise serializers.ValidationError({"parts": "The part does not exist."})
