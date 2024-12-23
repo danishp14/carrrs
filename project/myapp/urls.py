@@ -12,10 +12,12 @@ from .views import SpearPartsList,Purchase,EmpEfficency
 urlpatterns = [
  path('admin_api/', AdminAPIView.as_view(), name='admin_api'),
  path('admin_api/<int:pk>/', AdminAPIView.as_view(), name='admin_api'),
+
  path('emp_register/', EmpRegisterView.as_view(), name='emp_register'),
  path('employee_login/', EmployeeLoginView.as_view(), name='employee_login'),
  path('employee_api/', EmployeeAPIView.as_view(), name='employee_api'),
  path('employee_api/<int:pk>/', EmployeeAPIView.as_view(), name='employee_api'),
+
  path('customer_register/', CustomerRegisterView.as_view(), name='customer_register'),
  path('customer_login/', CustomerLoginView.as_view(), name='customer_login'),
  path('customer_api/',CustomerAPI.as_view(),name='customer_api'),

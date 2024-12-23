@@ -13,11 +13,11 @@ from django.core.validators import RegexValidator
 class Users(AbstractUser):
     # Add any common fields if necessary
     ROLES = (
-        ('admin', 'Admin'),
-        ('employee', 'Employee'),
-        ('customer', 'Customer'),
+        ("admin", "Admin"),
+        ("employee", "Employee"),
+        ("customer", "Customer"),
     )
-    role = models.CharField(max_length=10, choices=ROLES,default='customer')
+    role = models.CharField(max_length=10, choices=ROLES,default="customer")
     name = models.CharField(max_length=50,unique=True,null=True)
     salary = models.DecimalField(max_digits=10, decimal_places=2,null=True, blank=True)
     joining_date = models.DateField(auto_now_add=True)
@@ -52,20 +52,20 @@ class CarWashService(models.Model):
     "only_polish": 30,
     }
 
-    STATUS=[("completed", "Complete"),
+    STATUS = [("completed", "Complete"),
              ("in_progress", "In Progress"),
                                   ] 
     
     vehicle_number_validator = RegexValidator(
-        regex=r'^[A-Z]{2}\d{2}[a-z]{2}\d{4}$',
-        message="Vehicle number must be in the format 'XX00XX0000' (e.g.:-'MH14fu1234')."
+        regex = r'^[A-Z]{2}\d{2}[a-z]{2}\d{4}$',
+        message = "Vehicle number must be in the format 'XX00XX0000' (e.g.:-'MH14fu1234')."
     )
                                   
     # Model fields
     service_type = models.CharField(max_length=50, choices=SERVICE_TYPE_CHOICES, default="full_carwash")
-    employee = models.ForeignKey('Users', null=True, blank=True, on_delete=models.CASCADE, 
+    employee = models.ForeignKey("Users", null=True, blank=True, on_delete=models.CASCADE, 
                                  related_name="CarWashService")
-    customer = models.ForeignKey('Users', on_delete=models.CASCADE)
+    customer = models.ForeignKey("Users", on_delete=models.CASCADE)
     status = models.CharField(choices=STATUS,max_length=15, 
                                   default="in_progress")
     final_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)    
@@ -86,7 +86,7 @@ class CarWashService(models.Model):
 
     def save(self, *args, **kwargs):
     # Check if the status is changing to "completed"
-        if self.status == 'completed' and not self.services_end_date:
+        if self.status == "completed" and not self.services_end_date:
             self.services_end_date = now()
             # Update the employee's service counts
             employee = self.employee  # The employee who performed the service
@@ -127,12 +127,12 @@ class CarWashService(models.Model):
 
         month_date = CarWashService.objects.filter(services_start_date__month=today.month, services_start_date__year=today.year)
 
-        period_dict={
-            "today":today_date,
-            "yesterday":yesterday_date,
-            "weekly":week_date,
-            "monthly":month_date
-        }
+        period_dict = {
+                "today":today_date,
+                "yesterday":yesterday_date,
+                "weekly":week_date,
+                "monthly":month_date
+            }
 
         count = period_dict.get(period, None)
 
@@ -145,11 +145,11 @@ class CarWashService(models.Model):
 class Reviewmodel(models.Model):
 
     RATINGS_CHOICES = [
-        (1, '1'),
-        (2, '2'),
-        (3, '3'),
-        (4, '4'),
-        (5, '5'),
+        (1, "1"),
+        (2, "2"),
+        (3, "3"),
+        (4, "4"),
+        (5, "5"),
     ]
     #positive small Integer
     ratings = models.PositiveSmallIntegerField(choices=RATINGS_CHOICES, default=3)
@@ -173,9 +173,9 @@ class PartsListModel(models.Model):
 
 class Purchasemodel(models.Model):
 
-    parts = models.ForeignKey('PartsListModel', related_name='parts_purchase', on_delete=models.CASCADE)
-    customer = models.ForeignKey('Users', related_name='parts_Customer', on_delete=models.CASCADE)
-    employee = models.ForeignKey('Users', related_name='parts_emp', on_delete=models.CASCADE)
+    parts = models.ForeignKey("PartsListModel", related_name="parts_purchase", on_delete=models.CASCADE)
+    customer = models.ForeignKey("Users", related_name="parts_Customer", on_delete=models.CASCADE)
+    employee = models.ForeignKey("Users", related_name="parts_emp", on_delete=models.CASCADE)
     purchase_date = models.DateTimeField(auto_now=True)
     
     quantity = models.PositiveIntegerField(default=1)
