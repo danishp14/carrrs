@@ -43,6 +43,7 @@ class CarWashService(models.Model):
     ("full_with_polish", "Full with Polish - 100 Rupees"),
     ("only_polish", "Only Polish - 30 Rupees"),
     ]
+
 # Defining prices for each service type
     SERVICE_PRICE = {
     "full_carwash": 70,
@@ -177,11 +178,4 @@ class Purchasemodel(models.Model):
     customer = models.ForeignKey("Users", related_name="parts_Customer", on_delete=models.CASCADE)
     employee = models.ForeignKey("Users", related_name="parts_emp", on_delete=models.CASCADE)
     purchase_date = models.DateTimeField(auto_now=True)
-    
     quantity = models.PositiveIntegerField(default=1)
-    total_price = models.PositiveIntegerField()
-
-    def save(self, *args, **kwargs):
-        # Calculate total price based on quantity
-        self.total_price = self.parts.parts_prices * self.quantity
-        super().save(*args, **kwargs)

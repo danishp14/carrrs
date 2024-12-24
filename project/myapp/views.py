@@ -1,5 +1,6 @@
 # Standard library imports # Django imports
 from django.db.models import Q
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404, HttpResponse, redirect
 from django.contrib.auth import authenticate
 from django.core.mail import send_mail
@@ -308,18 +309,14 @@ class EmployeeAPIView(APIView):
             )
         
         try:
-            employee = Users.objects.get(pk=pk)
-            employee.delete()
+            emp = Users.objects.get(pk=pk, role__in=["admin", "employee"])
+            emp.delete()
             return Response(
-                {"detail": "Employee deleted."},
-                status=status.HTTP_204_NO_CONTENT,
-            )
-        
-        except Users.DoesNotExist:
-            return Response(
-                {"detail": "Employee not found."},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            {"detail": "Employee deleted."},
+                    status=status.HTTP_204_NO_CONTENT,
+                    )
+        except ObjectDoesNotExist:
+            return Response({"message": "Invalid pk"}, status=status.HTTP_400_BAD_REQUEST)
     
         except Exception as e:
         # Handle any exception that occurs
@@ -523,18 +520,15 @@ class CustomerAPI(APIView):
                 )
         
         try:
-            customer = Users.objects.get(pk=pk)
-            customer.delete()
+            emp = Users.objects.get(pk=pk, role="customer")
+            emp.delete()
             return Response(
-                {"detail": "customer deleted."}, 
-                status=status.HTTP_204_NO_CONTENT
-                )
+            {"detail": "Customer deleted."},
+                    status=status.HTTP_204_NO_CONTENT,
+                    )
         
-        except Users.DoesNotExist:
-            return Response(
-                {"detail": "customer not found."}, 
-                status=status.HTTP_404_NOT_FOUND
-                )
+        except ObjectDoesNotExist:
+            return Response({"message": "Invalid pk"}, status=status.HTTP_400_BAD_REQUEST)
         
         except Exception as e:
         # Handle any exception that occurs
@@ -720,6 +714,10 @@ class CarWashServiceView(APIView):
             type = carwash.service_type
             customer_id = carwash.customer.id
 
+            recorded_status = carwash.status
+            if recorded_status:
+                return Response("This Services is already completed")
+
             # status = carwash.status
             print(type,customer_id,vehicle_number,statuss)
                     # Check if a purchase with the same part , and customer already exists
@@ -786,6 +784,9 @@ class CarWashServiceView(APIView):
     def send_email(self, service, base_price, discount):
         # Extract customer email
         to_email = service.customer.email
+        to_email ='danishp14g@yopmail.com'
+
+        print('email-------',to_email)
         # Calculate base price inside the method
         base_price = CarWashService.SERVICE_PRICE.get(service.service_type, 0)
         discount = service.customer.discount_remaining
@@ -827,6 +828,8 @@ class CarWashServiceView(APIView):
                 message=message,
                 from_email=settings.EMAIL_HOST_USER,
                 recipient_list=[to_email])
+            
+            print('email sent')
             return "Email sent successfully"
 
         except Exception as e:
@@ -897,23 +900,23 @@ class EmpEfficency(APIView):
             if not services.exists():
                 return Response("No matching services found", status=status.HTTP_404_NOT_FOUND)
 
-                # Initialize total time to 0
-            total_time = 0
             total_services = 0
             service_data = []
                 # Iterate through each service to calculate the total time
             for service in services:
                 if service.services_start_date and service.services_end_date:
-                        # Calculate the time difference for each service and add to total_time
+                    # Calculate the time difference for each service and add to total_time
                     time_taken = (service.services_end_date - service.services_start_date).total_seconds()
-                    total_time += time_taken
 
-                    total_time_in_hours = total_time / 3600
+                    # Convert to hours and minutes
+                    hours, remainder = divmod(int(time_taken), 3600)
+                    minutes, seconds = divmod(remainder, 60)
+                    time_in_format = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
                     service_data.append({
                     "service_id": service.id,
                     "service_type": service.service_type,
-                    "time_taken_hours": total_time_in_hours,
+                    "time_taken_hours": time_in_format,
                     "services_start_date": service.services_start_date,
                     "services_end_date": service.services_end_date,
                     "vehicle_nos":service.vehicle_number,
@@ -937,6 +940,7 @@ class EmpEfficency(APIView):
             {"error": f"An error occurred: {str(e)}"},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
 
 # Sales count
 class ServicesCountAPIView(APIView):
@@ -1215,19 +1219,40 @@ class Purchase(APIView):
             )
         
         try:
-            Purchase_id = request.query_params.get("id",None)
-            if Purchase_id :
-                Purchase = Purchasemodel.objects.filter(Purchase_id=id)
-                if not Purchase.exists() or None:
-                    return Response(
-                        {"detail": f"Admin with ID {Purchase_id} not found."},
-                        status=status.HTTP_404_NOT_FOUND,
-                    )
+            # purchase_id = request.query_params.get("id",None)
+            # if purchase_id :
+            #     purchase = Purchasemodel.objects.filter(id=purchase_id)
+            #     if not purchase.exists() or None:
+            #         return Response(
+            #             {"detail": f"Admin with ID {purchase_id} not found."},
+            #             status=status.HTTP_404_NOT_FOUND,
+            #         )
                 
-            else:   
-                Purchase = Purchasemodel.objects.all()
-                Serializer = PurchaseSerializer(Purchase,many=True)
-            return Response(Serializer.data,status=status.HTTP_200_OK)
+            # else:   
+            purchase = Purchasemodel.objects.all()
+            data = []
+            for item in purchase:
+                part_id = item.parts_id  # Access the related ForeignKey field (assuming it points to PartsListModel)
+                customer= item.customer
+                employee = item.employee
+                part = item.parts
+                quantity=item.quantity
+                parts_prices=part.parts_prices
+                total_price = parts_prices * quantity
+                
+                data.append(
+                    {
+                     "part_id":part_id,
+                     "part_name":part.parts_name,
+                     "customer":customer.name,
+                     "employee":employee.name,
+                     "quantity":quantity,
+                     "parts_prices":parts_prices,       
+                     "total_price":total_price,
+                     })
+
+            serializer = PurchaseSerializer(Purchase,many=True)
+            return Response(data,status=status.HTTP_200_OK)
         
         except Exception as e:
         # Handle any exception that occurs
@@ -1271,7 +1296,6 @@ class Purchase(APIView):
 
             # If a record exists, update the quantity and total price
             existing_purchase.quantity += quantity  # Add the new quantity to the existing quantity
-            existing_purchase.total_price = existing_purchase.parts.parts_prices * existing_purchase.quantity  # Update total price
             existing_purchase.save()  # Save the updated record
 
             # Deduct the stock quantity based on the new total purchase

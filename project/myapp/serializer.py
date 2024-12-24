@@ -88,7 +88,7 @@ class EmployeeRegistrationSerializer(serializers.ModelSerializer):
         
         if role == "admin":
             if salary is not None and salary != 0:
-                raise serializers.ValidationError({"salary": "Salary for admins must be zero or not provided."})
+                raise serializers.ValidationError({"salary": "Salary for admins should not be provided."})
 
         return data
 
